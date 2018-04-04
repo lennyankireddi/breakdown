@@ -1,0 +1,27 @@
+{
+  "name": "breakdown",
+  "version": "1.0.0",
+  "description": "Data visualization using breakdown of hierarchical entities",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lennyankireddi/breakdown.git"
+  },
+  "keywords": [
+    "Data",
+    "visualization",
+    "hierarchical",
+    "breakdown",
+    "javascript",
+    "jquery"
+  ],
+  "author": "Lenny Ankireddi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lennyankireddi/breakdown/issues"
+  },
+  "homepage": "https://github.com/lennyankireddi/breakdown#readme"
+}
