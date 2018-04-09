@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+    <head>
+        <title>breakdown Visualization</title>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="./css/font-awesome.min.css">
+        <link rel="stylesheet" href="./css/breakdown.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Visualization -->
+                    <div id="breakdownChart">
+                        <div class="chart-title"></div>
+                        <div class="chart-description"></div>
+                        <div class="chart-actions">
+                            <div class="chart-action action-up inactive"><i class="fa fa-angle-up"></i></div>
+                            <div class="chart-action action-scale"><input type="checkbox" class="scale-checkbox" checked>&nbsp;Scale children by value</div>
+                        </div>
+                        <div class="chart-canvas" id="chartBody"></div>
+                    </div>
+                    
+
+                    <div class=breakdown-svg>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <!-- Filters -->
+                </div>
+            </div>
+        </div>
+        <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+        <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+        <!-- <script src="./node_modules/popper.js/dist/popper.min.js"></script>
+        <script src="./node_modules/tooltip.js/dist/tooltip.min.js"></script> -->
+        <script src="./node_modules/moment/min/moment.min.js"></script>
+        <script src="./js/breakdown.js"></script>
+    </body>
+</html>

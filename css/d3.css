@@ -1,0 +1,37 @@
+#chart {
+    width: 100%;
+}
+.chart-actions {
+    background-color: #f2f2f2;
+    padding: 10px;
+}
+.chart-action {
+    cursor: pointer;
+    width: 36px;
+    padding: 8px;
+}
+.chart-action:hover {
+    background-color: #DDD;
+}
+.action-scale.active {
+    background-color: #CCC;
+}
+.geo-node-name {
+    font-family: 'Raleway', sans-serif;
+}
+.geo-node-symbol {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10px
+}
+.geo-node-unit {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 10px;
+}
+.geo-node-actual {
+    font-family: 'Abel', sans-serif;
+    font-size: 24px;
+}
+.geo-node-variance {
+    font-family: 'Abel', sans-serif;
+    font-size: 16px;
+}

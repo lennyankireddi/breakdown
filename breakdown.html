@@ -1,0 +1,368 @@
+<!doctype html>
+<html>
+    <head>
+        <title>d3 Test Sample</title>
+        <meta charset='utf-8' />
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans|Raleway|Roboto|Abel" rel="stylesheet">
+        <link rel="stylesheet" href="./node_modules/bootstrap/dist/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="./node_modules/font-awesome/css/font-awesome.min.css" />
+        <link rel="stylesheet" href="./css/breakdown.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="chart-actions" id="chartActions">
+                        <img src="./images/chevron-up.png" class="chart-action action-up">
+                        <img src="./images/ruler.png" class="chart-action action-scale active">
+                    </div>
+                    <div id="chart"></div>
+                    <div class="time-slider" id="timeSlider"></div>
+                </div>
+                <div class="col-md-4">
+
+                </div>
+            </div>
+        </div>
+        
+        <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+        <script src="./node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+        <script src="./node_modules/jqueryui/jquery-ui.min.js"></script>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <script>
+            var svg;
+            var chartWidth = parseInt($("#chart").css("width").replace("px", ""));
+            var chartHeight = 300;
+            var navStack = [];
+            var currRoot;
+
+            function GetColor(level, position, parentColor) {
+                switch(level) {
+                    case 1: return '#aaa';
+                    case 2: 
+                        switch(position) {
+                            case 0: return '#f03b20';
+                            case 1: return '#756bb1';
+                            case 2: return '#2b8cbe';
+                            case 3: return '#31a354';
+                            case 4: return '#c51b8a';
+                            case 5: return '#2c7fb8';
+                            case 6: return '#3182bd';
+                        }
+                        break;
+                    case 3:
+                        switch(parentColor) {
+                            case '#2c7fb8': return '#7fcdbb';
+                            case '#31a354': return '#addd8e';
+                            case '#c51b8a': return '#fa9fb5';
+                            case '#2b8cbe': return '#a6bddb';
+                            case '#f03b20': return '#feb24c';
+                            case '#756bb1': return '#bcbddc';
+                            case '#3182bd': return '#9ecae1';
+                        }
+                        break;
+                    default: return '#888';
+                }
+            }
+            var level = 1;
+            function AssignColors(node, position, parentColor) {
+                node.color = GetColor(level, position, parentColor);
+                if (node.children) {
+                    level++;
+                    $.each(node.children, function(i, child) {
+                        AssignColors(child, i, node.color);
+                    });
+                    level--
+                }
+            }
+            function AssignRatios(node, scale) {
+                if (node.children) {
+                    var den = 0;
+                    if (scale) {
+                        $.each(node.children, function(i, n) { den += n.actual; });
+                    }
+                    else den = node.children.length;
+
+                    $.each(node.children, function(i, n) {
+                        if (scale) {
+                            n.ratio = parseFloat((n.actual / den).toFixed(6));
+                        }
+                        else {
+                            n.ratio = parseFloat((1 / den).toFixed(6));
+                        }
+                        AssignRatios(n, scale);
+                    });
+                }
+            }
+            function ResetRatio(node) {
+                node.ratio = 1;
+                if (node.children) {
+                    $.each(node.children, function(i, n) {
+                        ResetRatio(n);
+                    });
+                }
+            }
+            function GetParentX(parent) {
+                var width = 0;
+                if ($(parent).children()) {
+                    $.each($(parent).children(), function (i, child) {
+                        width += parseInt($(child).css("width").replace("px", ""));
+                    });
+                }
+                return width;
+            }
+            function FindDataNode(node, moniker) {
+                // Check if node moniker matches input
+                if (node.moniker == moniker) {
+                    // If match, return the node
+                    return node;
+                }
+                else {
+                    var result;
+                    // If no match, check if node has children and iterate through
+                    // them if it does
+                    if (node.hasOwnProperty('children')) {
+                        $.each(node.children, function(i, element) {
+                            // Get result of recursive call on child
+                            result = FindDataNode(element, moniker);
+                            // If the node is found, break the loop
+                            if (result != null) {
+                                return false;
+                            }
+                        });
+                        // If there is a valid result, return it. Else move on to next node
+                        if (result) {
+                            return result;
+                        }
+                    }
+                }
+            }
+            function RenderNode(node, target, nodeLeft, nodeWidth) {
+                var rect = target.append('rect')
+                    .attr('x', nodeLeft)
+                    .attr('width', nodeWidth)
+                    .attr('height', 100)
+                    .attr('data-node', node.moniker)
+                    .attr('class', 'geo-node')
+                    .style('fill', node.color)
+                    .style('stroke', '#fff');
+
+                var textGroup = target.append('g').attr('transform', 'translate(' + nodeLeft + ', 0)');
+                textGroup.append('text').attr('x', 5).attr('y', 20).attr('class', 'geo-node-name').style('fill', '#fff').text(node.moniker);
+                textGroup.append('text').attr('x', 5).attr('y', 45).attr('class', 'geo-node-actual').style('fill', '#fff').text("$" + node.actual + "M");
+                textGroup.append('text').attr('x', 5).attr('y', 65).attr('class', 'geo-node-variance').style('fill', '#fff').text("(" + ((node.actual / node.budget) * 100).toFixed() + "%)");
+                
+                if (node.children) {
+                    target = target.append('g').attr('transform', 'translate(' + nodeLeft + ', 100)').attr('data-node', node.moniker);
+                    var childWidth = 0
+                    $.each(node.children, function(i, child) {
+                        var scaleFactor = 1;
+                        if (child.hasOwnProperty('ratio')) {
+                            scaleFactor = child.ratio;
+                        }
+                        var newNodeWidth = parseFloat((scaleFactor * nodeWidth).toFixed(2));
+                        RenderNode(child, target, childWidth, newNodeWidth);
+                        childWidth += newNodeWidth;
+                    });
+                }
+            }
+            function InitializeChart() {
+                svg = d3.select("#chart").append("svg").attr('width', chartWidth).attr('height', chartHeight).style("background-color", "#fff");
+                $("#timeSlider").slider();
+            }
+            function RenderChart(node, scale) {
+                AssignRatios(node, scale);
+                $('svg').empty();
+                RenderNode(node, svg, 0, chartWidth);
+            }
+            function AddEventHandlers() {
+                $(document).on("click", ".geo-node", function() {
+                    ResetRatio(data);
+                    navStack.push(currRoot);
+                    currRoot = FindDataNode(data, $(this).attr('data-node'));
+                    RenderChart(currRoot, $('.action-scale').hasClass('active'));
+                });
+                $(document).on("click", ".action-up", function() {
+                    if (navStack.length > 0) {
+                        currRoot = navStack.pop();
+                        RenderChart(currRoot, $('.action-scale').hasClass('active'));
+                    }
+                });
+                $(document).on("click", ".action-scale", function() {
+                    $(this).toggleClass("active");
+                    RenderChart(currRoot, $('.action-scale').hasClass('active'));
+                });
+            }
+
+            $(document).ready(function(){
+                AssignColors(data, 0, '');
+                InitializeChart();
+                currRoot = data;
+                RenderChart(currRoot, $('.action-scale').hasClass('active'));
+                AddEventHandlers();
+            });
+            
+
+            var data = {
+                "name": "Global",
+                "moniker": "GLB",
+                "actual": 903,
+                "budget": 809,
+                "children": [
+                    {
+                        "name": "Americas",
+                        "moniker": "AM",
+                        "actual": 353,
+                        "budget": 319,
+                        "children": [
+                            {
+                                "name": "United States of America",
+                                "moniker": "USA",
+                                "actual": 179,
+                                "budget": 160
+                            },
+                            {
+                                "name": "Canada",
+                                "moniker": "CAN",
+                                "actual": 81,
+                                "budget": 79
+                            },
+                            {
+                                "name": "Brazil",
+                                "moniker": "BRA",
+                                "actual": 93,
+                                "budget": 80
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Japan",
+                        "moniker": "JPN",
+                        "actual": 121,
+                        "budget": 108
+                        // "children": [
+                        //     {
+                        //         "name": "Japan",
+                        //         "moniker": "JAP",
+                        //         "actual": 121,
+                        //         "budget": 108
+                        //     }
+                        // ]
+                    },
+                    {
+                        "name": "Europe, Middle East and Africa",
+                        "moniker": "EMEA",
+                        "actual": 398,
+                        "budget": 358,
+                        "children": [
+                            {
+                                "name": "United Kingdom",
+                                "moniker": "UK",
+                                "actual": 142,
+                                "budget": 122
+                            },
+                            {
+                                "name": "France",
+                                "moniker": "FRA",
+                                "actual": 99,
+                                "budget": 90
+                            },
+                            {
+                                "name": "Germany",
+                                "moniker": "GER",
+                                "actual": 70,
+                                "budget": 71
+                            },
+                            {
+                                "name": "Spain",
+                                "moniker": "ESP",
+                                "actual": 42,
+                                "budget": 34
+                            },
+                            {
+                                "name": "Italy",
+                                "moniker": "ITA",
+                                "actual": 37,
+                                "budget": 33
+                            },
+                            {
+                                "name": "Norway",
+                                "moniker": "NOR",
+                                "actual": 2,
+                                "budget": 2
+                            },
+                            {
+                                "name": "Sweden",
+                                "moniker": "SWE",
+                                "actual": 2,
+                                "budget": 2
+                            },
+                            {
+                                "name": "Finland",
+                                "moniker": "FIN",
+                                "actual": 1,
+                                "budget": 2
+                            },
+                            {
+                                "name": "Denmark",
+                                "moniker": "DEN",
+                                "actual": 3,
+                                "budget": 2
+                            }
+                        ]
+                    },
+                    {
+                        "name": "Asia and Oceania",
+                        "moniker": "AOB",
+                        "actual": 31,
+                        "budget": 24,
+                        "children": [
+                            {
+                                "name": "China",
+                                "moniker": "CHN",
+                                "actual": 2,
+                                "budget": 2
+                            },
+                            {
+                                "name": "India",
+                                "moniker": "IND",
+                                "actual": 2,
+                                "budget": 2
+                            },
+                            {
+                                "name": "Israel",
+                                "moniker": "ISR",
+                                "actual": 1,
+                                "budget": 1
+                            },
+                            {
+                                "name": "Australia",
+                                "moniker": "AUS",
+                                "actual": 6,
+                                "budget": 5
+                            },
+                            {
+                                "name": "New Zealand",
+                                "moniker": "NZ",
+                                "actual": 3,
+                                "budget": 2
+                            },
+                            {
+                                "name": "Malaysia",
+                                "moniker": "MLY",
+                                "actual": 13,
+                                "budget": 9
+                            },
+                            {
+                                "name": "Singapore",
+                                "moniker": "SIN",
+                                "actual": 4,
+                                "budget": 3
+                            }
+                        ]
+                    }
+                ] 
+            }
+        </script>
+    </body>
+</html>

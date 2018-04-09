@@ -1,0 +1,176 @@
+{
+    "title": "Net Sales FYTD",
+    "description": "Xtandi Net Sales in millions of dollars to the current month in the current fiscal year with actual sales value tracked as a percentage of budgeted value",
+    "datatypes": [
+        {
+            "attribute": "actual",
+            "type": "currency",
+            "scale": "Millions USD"
+        },
+        {
+            "attribute": "budget",
+            "type": "currency",
+            "scale": "Millions USD"
+        }
+    ],
+    "data": {
+        "name": "Global",
+        "moniker": "GLB",
+        "actual": 903,
+        "budget": 809,
+        "children": [
+            {
+                "name": "Americas",
+                "moniker": "AM",
+                "actual": 353,
+                "budget": 319,
+                "children": [
+                    {
+                        "name": "United States of America",
+                        "moniker": "USA",
+                        "actual": 179,
+                        "budget": 160
+                    },
+                    {
+                        "name": "Canada",
+                        "moniker": "CAN",
+                        "actual": 81,
+                        "budget": 79
+                    },
+                    {
+                        "name": "Brazil",
+                        "moniker": "BRA",
+                        "actual": 93,
+                        "budget": 80
+                    }
+                ]
+            },
+            {
+                "name": "Japan",
+                "moniker": "JPN",
+                "actual": 121,
+                "budget": 108,
+                "children": [
+                    {
+                        "name": "Japan",
+                        "moniker": "JAP",
+                        "actual": 121,
+                        "budget": 108
+                    }
+                ]
+            },
+            {
+                "name": "Europe, Middle East and Africa",
+                "moniker": "EMEA",
+                "actual": 398,
+                "budget": 358,
+                "children": [
+                    {
+                        "name": "United Kingdom",
+                        "moniker": "UK",
+                        "actual": 142,
+                        "budget": 122
+                    },
+                    {
+                        "name": "France",
+                        "moniker": "FRA",
+                        "actual": 99,
+                        "budget": 90
+                    },
+                    {
+                        "name": "Germany",
+                        "moniker": "GER",
+                        "actual": 70,
+                        "budget": 71
+                    },
+                    {
+                        "name": "Spain",
+                        "moniker": "ESP",
+                        "actual": 42,
+                        "budget": 34
+                    },
+                    {
+                        "name": "Italy",
+                        "moniker": "ITA",
+                        "actual": 37,
+                        "budget": 33
+                    },
+                    {
+                        "name": "Norway",
+                        "moniker": "NOR",
+                        "actual": 2,
+                        "budget": 2
+                    },
+                    {
+                        "name": "Sweden",
+                        "moniker": "SWE",
+                        "actual": 2,
+                        "budget": 2
+                    },
+                    {
+                        "name": "Finland",
+                        "moniker": "FIN",
+                        "actual": 1,
+                        "budget": 2
+                    },
+                    {
+                        "name": "Denmark",
+                        "moniker": "DEN",
+                        "actual": 3,
+                        "budget": 2
+                    }
+                ]
+            },
+            {
+                "name": "Asia and Oceania",
+                "moniker": "AOB",
+                "actual": 31,
+                "budget": 24,
+                "children": [
+                    {
+                        "name": "China",
+                        "moniker": "CHN",
+                        "actual": 2,
+                        "budget": 2
+                    },
+                    {
+                        "name": "India",
+                        "moniker": "IND",
+                        "actual": 2,
+                        "budget": 2
+                    },
+                    {
+                        "name": "Israel",
+                        "moniker": "ISR",
+                        "actual": 1,
+                        "budget": 1
+                    },
+                    {
+                        "name": "Australia",
+                        "moniker": "AUS",
+                        "actual": 6,
+                        "budget": 5
+                    },
+                    {
+                        "name": "New Zealand",
+                        "moniker": "NZ",
+                        "actual": 3,
+                        "budget": 2
+                    },
+                    {
+                        "name": "Malaysia",
+                        "moniker": "MLY",
+                        "actual": 13,
+                        "budget": 9
+                    },
+                    {
+                        "name": "Singapore",
+                        "moniker": "SIN",
+                        "actual": 4,
+                        "budget": 3
+                    }
+                ]
+            }
+        ] 
+    }
+}
