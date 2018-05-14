@@ -1,6 +1,7 @@
 {
     "title": "Net Sales FYTD",
     "description": "Xtandi Net Sales in millions of dollars to the current month in the current fiscal year with actual sales value tracked as a percentage of budgeted value",
+    "updated": "3/14/2018",
     "datatypes": [
         {
             "attribute": "actual",

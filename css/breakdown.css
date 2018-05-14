@@ -1,3 +1,20 @@
+.chart-header {
+    background-color: #333;
+    color: white;
+    padding: 10px;
+}
+.chart-title {
+    font-family: 'PT Serif', serif;
+    font-size: 30px;
+}
+.chart-description {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 12px;
+}
+.chart-updated {
+    font-family: 'Abel', sans-serif;
+    font-size: 12px;
+}
 #chart {
     width: 100%;
 }
@@ -34,4 +51,8 @@
 .geo-node-variance {
     font-family: 'Abel', sans-serif;
     font-size: 16px;
+}
+.time-nav {
+    background-color: #f2f2f2;
+    padding: 20px 30px;
 }

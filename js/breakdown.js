@@ -1,8 +1,85 @@
-var fullDataset;
+var svg;
+var chartWidth = parseInt($("#chart").css("width").replace("px", ""));
+var chartHeight = 300;
 var navStack = [];
 var currRoot;
 
-function FindNode(node, moniker) {
+function GetColor(level, position, parentColor) {
+    switch(level) {
+        case 1: return '#aaa';
+        case 2: 
+            switch(position) {
+                case 0: return '#f03b20';
+                case 1: return '#756bb1';
+                case 2: return '#2b8cbe';
+                case 3: return '#31a354';
+                case 4: return '#c51b8a';
+                case 5: return '#2c7fb8';
+                case 6: return '#3182bd';
+            }
+            break;
+        case 3:
+            switch(parentColor) {
+                case '#2c7fb8': return '#7fcdbb';
+                case '#31a354': return '#addd8e';
+                case '#c51b8a': return '#fa9fb5';
+                case '#2b8cbe': return '#a6bddb';
+                case '#f03b20': return '#feb24c';
+                case '#756bb1': return '#bcbddc';
+                case '#3182bd': return '#9ecae1';
+            }
+            break;
+        default: return '#888';
+    }
+}
+var level = 1;
+function AssignColors(node, position, parentColor) {
+    node.color = GetColor(level, position, parentColor);
+    if (node.children) {
+        level++;
+        $.each(node.children, function(i, child) {
+            AssignColors(child, i, node.color);
+        });
+        level--
+    }
+}
+function AssignRatios(node, scale) {
+    if (node.children) {
+        var den = 0;
+        if (scale) {
+            $.each(node.children, function(i, n) { den += n.actual; });
+        }
+        else den = node.children.length;
+
+        $.each(node.children, function(i, n) {
+            if (scale) {
+                n.ratio = parseFloat((n.actual / den).toFixed(6));
+            }
+            else {
+                n.ratio = parseFloat((1 / den).toFixed(6));
+            }
+            AssignRatios(n, scale);
+        });
+    }
+}
+function ResetRatio(node) {
+    node.ratio = 1;
+    if (node.children) {
+        $.each(node.children, function(i, n) {
+            ResetRatio(n);
+        });
+    }
+}
+function GetParentX(parent) {
+    var width = 0;
+    if ($(parent).children()) {
+        $.each($(parent).children(), function (i, child) {
+            width += parseInt($(child).css("width").replace("px", ""));
+        });
+    }
+    return width;
+}
+function FindDataNode(node, moniker) {
     // Check if node moniker matches input
     if (node.moniker == moniker) {
         // If match, return the node
@@ -15,7 +92,7 @@ function FindNode(node, moniker) {
         if (node.hasOwnProperty('children')) {
             $.each(node.children, function(i, element) {
                 // Get result of recursive call on child
-                result = FindNode(element, moniker);
+                result = FindDataNode(element, moniker);
                 // If the node is found, break the loop
                 if (result != null) {
                     return false;
@@ -28,154 +105,76 @@ function FindNode(node, moniker) {
         }
     }
 }
+function RenderNode(node, target, nodeLeft, nodeWidth) {
+    var rect = target.append('rect')
+        .attr('x', nodeLeft)
+        .attr('width', nodeWidth)
+        .attr('height', 100)
+        .attr('data-node', node.moniker)
+        .attr('class', 'geo-node')
+        .style('fill', node.color)
+        .style('stroke', '#fff');
 
-function CalculateRatios(nodes) {
-    // Get denominator
-    var den = 0;
-    if ($(".scale-checkbox").is(":checked")) {
-        $.each(nodes, function(i, n) { den += n.actual });
-    }
-    else {
-        den = nodes.length
-    }
-
-    var num;
-
-    // Add ratio as property to nodes
-    $.each(nodes, function(i, n) {
-        if ($(".scale-checkbox").is(":checked")) {
-            num = n.actual;
-        }
-        else {
-            num = 1;
-        }
-        n.ratio = parseFloat((num * .995 / den).toFixed(2));
-    });
-}
-
-function ResetRatio(node) {
-    node.ratio = 1;
-    if (node.hasOwnProperty("children")) {
-        $.each(node.children, function(i, n) {
-            ResetRatio(n);
-        });
-    }
-}
-
-function CalculateNodeWidth(node, containerId) {
-    // Assume node box takes up all space unless it has ratio specified
-    var ratio = 1;
-    if (node.hasOwnProperty('ratio')) {
-        ratio = node.ratio;
-    }
-
-    // Get the width of the container
-    var containerWidth = document.getElementById(containerId).getBoundingClientRect().width;
-    return (Math.floor(ratio * containerWidth)).toFixed();
-}
-
-function AddNode(node, containerId) {
-    var nodeWidth = CalculateNodeWidth(node, containerId);
-    var nodeHtml = "<div class='node-wrapper' style='width: " + nodeWidth + "px'>" +
-                        "<div class='chart-node node-" + node.moniker + "' data-moniker='" + node.moniker + "'>" + node.moniker + "</div>" +
-                        "<div class='child-container' id='container" + node.moniker + "'></div>" +
-                    "</div>";
-    $("#" + containerId).append(nodeHtml);
-    return "container" + node.moniker;
-}
-
-function ProcessNode(node, containerId) {
-    containerId = AddNode(node, containerId);
-    if (node.hasOwnProperty('children')) {
-        CalculateRatios(node.children);
+    var textGroup = target.append('g').attr('transform', 'translate(' + nodeLeft + ', 0)');
+    textGroup.append('text').attr('x', 5).attr('y', 20).attr('class', 'geo-node-name').style('fill', '#fff').text(node.moniker);
+    textGroup.append('text').attr('x', 5).attr('y', 45).attr('class', 'geo-node-actual').style('fill', '#fff').text("$" + node.actual + "M");
+    textGroup.append('text').attr('x', 5).attr('y', 65).attr('class', 'geo-node-variance').style('fill', '#fff').text("(" + ((node.actual / node.budget) * 100).toFixed() + "%)");
+    
+    if (node.children) {
+        target = target.append('g').attr('transform', 'translate(' + nodeLeft + ', 100)').attr('data-node', node.moniker);
+        var childWidth = 0
         $.each(node.children, function(i, child) {
-            ProcessNode(child, containerId);
+            var scaleFactor = 1;
+            if (child.hasOwnProperty('ratio')) {
+                scaleFactor = child.ratio;
+            }
+            var newNodeWidth = parseFloat((scaleFactor * nodeWidth).toFixed(2));
+            RenderNode(child, target, childWidth, newNodeWidth);
+            childWidth += newNodeWidth;
         });
     }
 }
-
-function RenderChart(node) {
-    ResetRatio(fullDataset.data);
-    $("#chartBody").empty();
-    ProcessNode(node, "chartBody");
+function InitializeChart() {
+    $(".chart-title").text(chartData.title);
+    $(".chart-description").text(chartData.description);
+    $(".chart-updated").text(chartData.updated);
+    svg = d3.select("#chart").append("svg").attr('width', chartWidth).attr('height', chartHeight).style("background-color", "#f2f2f2");
+    $("#timeSlider").slider();
 }
-
-function InitializeChart(data) {
-    fullDataset = data;
-    currRoot = data.data;
-    $(".chart-title").text(data.title);
-    $(".chart-description").html(data.description);
-    //RenderChart(data.data);
-    RenderSvg(fullDataset.data);
-    $(".breakdown-svg").append(svgString);
+function RenderChart(node, scale) {
+    AssignRatios(node, scale);
+    $('svg').empty();
+    RenderNode(node, svg, 0, chartWidth);
 }
-
 function AddEventHandlers() {
-    $(document).on("click", ".chart-node", function() {
+    $(document).on("click", ".geo-node", function() {
+        ResetRatio(currRoot);
         navStack.push(currRoot);
-        $(".action-up").removeClass("inactive");
-        currRoot = FindNode(fullDataset.data, $(this).attr('data-moniker'));
-        if (currRoot) {
-            RenderChart(currRoot);
-        }
+        currRoot = FindDataNode(currRoot, $(this).attr('data-node'));
+        RenderChart(currRoot, $('.action-scale').hasClass('active'));
     });
-    $(".action-up").click(function() {
+    $(document).on("click", ".action-up", function() {
         if (navStack.length > 0) {
             currRoot = navStack.pop();
-            if (navStack.length == 0) {
-                $(".action-up").addClass("inactive");
-            }
-            if (currRoot) {
-                RenderChart(currRoot);
-            }
+            RenderChart(currRoot, $('.action-scale').hasClass('active'));
         }
     });
-    $(".scale-checkbox").change(function(){
-        RenderChart(currRoot);
+    $(document).on("click", ".action-scale", function() {
+        $(this).toggleClass("active");
+        RenderChart(currRoot, $('.action-scale').hasClass('active'));
     });
 }
 
-var svgString = "";
-const nodeHeight = 100;
-
-function GetNodeWidth(node, parent) {
-    // Assume node box takes up all space unless it has ratio specified
-    var ratio = 1;
-    if (node.hasOwnProperty('ratio')) {
-        ratio = node.ratio;
-    }
-    return (Math.floor(ratio * parent.width)).toFixed();
-}
-
-function MakeNode(node, parent) {
-    var nodeWidth = GetNodeWidth(node, parent);
-    svgString += "<rect width='" + nodeWidth + "' height='" + nodeHeight + "' style='fill: grey; stroke-width: 1; stroke: white' id='rect-" + node.moniker + "' />";
-    return { x: parseInt(parent.x), y: parseInt(parent.y) + parseInt(nodeHeight), width: parseInt(nodeWidth) };
-}
-
-function PaintNode(node, parent) {
-    parent = MakeNode(node, parent);
-    if (node.hasOwnProperty('children')) {
-        // Create a grouping node so that children may be added to it
-        svgString += "<g transform='translate(" + parent.x + ", " + nodeHeight +")'>";
-        CalculateRatios(node.children);
-        $.each(node.children, function(i, child) {
-            PaintNode(child, parent);
-        });
-        // Close grouping element for this node
-        svgString += "</g>";
-    }
-}
-
-function RenderSvg(node) {
-    ResetRatio(fullDataset.data);
-    $(".breakdown-svg").empty();
-    svgString += "<svg width='100%' height='310'>";
-    PaintNode(node, { x: 0, y: 0, width: parseInt($(".breakdown-svg").css("width").replace("px", "")) });
-    svgString += "</svg>";
-}
-
-$(document).ready(function() {
-    $.getJSON('js/data.json', InitializeChart);
-    AddEventHandlers();
+var chartData;
+var nodeData;
+$(document).ready(function(){
+    $.getJSON('/js/data.json', function(data) { 
+        chartData = data;
+        nodeData = data.data;
+        AssignColors(nodeData, 0, '');
+        InitializeChart();
+        currRoot = nodeData;
+        RenderChart(currRoot, $('.action-scale').hasClass('active'));
+        AddEventHandlers();
+    });
 });
